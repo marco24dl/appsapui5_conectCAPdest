@@ -1,0 +1,94 @@
+_schema-version: "3.2"
+ID: Ingresos-registros
+description: A Fiori application.
+version: 0.0.1
+modules:
+- name: Ingresos-registros-destination-content
+  type: com.sap.application.content
+  requires:
+  - name: Ingresos-registros-destination-service
+    parameters:
+      content-target: true
+  - name: Ingresos-registros-repo-host
+    parameters:
+      service-key:
+        name: Ingresos-registros-repo-host-key
+  - name: Ingresos-registros-uaa
+    parameters:
+      service-key:
+        name: Ingresos-registros-uaa-key
+  parameters:
+    content:
+      instance:
+        destinations:
+        - Name: Ingresos-registros_html_repo_host
+          ServiceInstanceName: Ingresos-registros-html5-srv
+          ServiceKeyName: Ingresos-registros-repo-host-key
+          sap.cloud.service: Ingresos-registros
+        - Authentication: OAuth2UserTokenExchange
+          Name: Ingresos-registros_uaa
+          ServiceInstanceName: Ingresos-registros-xsuaa-srv
+          ServiceKeyName: Ingresos-registros-uaa-key
+          sap.cloud.service: Ingresos-registros
+        existing_destinations_policy: ignore
+  build-parameters:
+    no-source: true
+- name: Ingresos-registros-app-content
+  type: com.sap.application.content
+  path: .
+  requires:
+  - name: Ingresos-registros-repo-host
+    parameters:
+      content-target: true
+  build-parameters:
+    build-result: resources
+    requires:
+    - artifacts:
+      - Ingresosregistros.zip
+      name: Ingresosregistros
+      target-path: resources/
+- name: Ingresosregistros
+  type: html5
+  path: .
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+resources:
+- name: Ingresos-registros-destination-service
+  type: org.cloudfoundry.managed-service
+  parameters:
+    config:
+      HTML5Runtime_enabled: true
+      init_data:
+        instance:
+          destinations:
+          - Authentication: NoAuthentication
+            Name: ui5
+            ProxyType: Internet
+            Type: HTTP
+            URL: https://ui5.sap.com
+          existing_destinations_policy: update
+      version: 1.0.0
+    service: destination
+    service-name: Ingresos-registros-destination-service
+    service-plan: lite
+- name: Ingresos-registros-uaa
+  type: org.cloudfoundry.managed-service
+  parameters:
+    path: ./xs-security.json
+    service: xsuaa
+    service-name: Ingresos-registros-xsuaa-srv
+    service-plan: application
+- name: Ingresos-registros-repo-host
+  type: org.cloudfoundry.managed-service
+  parameters:
+    service: html5-apps-repo
+    service-name: Ingresos-registros-html5-srv
+    service-plan: app-host
+parameters:
+  deploy_mode: html5-repo
+  enable-parallel-deployments: true
